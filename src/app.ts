@@ -1,6 +1,6 @@
-import {MultiValueCombo} from "./MultiValueCombo";
-import {BaseMultiValueControl} from "./BaseMultiValueControl";
-import * as WitExtensionContracts  from "TFS/WorkItemTracking/ExtensionContracts";
+import { MultiValueCombo } from "./MultiValueCombo";
+import { BaseMultiValueControl } from "./BaseMultiValueControl";
+import * as WitExtensionContracts from "TFS/WorkItemTracking/ExtensionContracts";
 import { WorkItemFormService } from "TFS/WorkItemTracking/Services";
 
 // save on ctr + s
@@ -20,7 +20,7 @@ var provider = () => {
         if (!control) {
             var inputs: IDictionaryStringTo<string> = VSS.getConfiguration().witInputs;
             var controlType: string = inputs["InputMode"];
-             control = new MultiValueCombo();
+            control = new MultiValueCombo();
 
             control.initialize();
         }
@@ -34,16 +34,21 @@ var provider = () => {
         },
         onUnloaded: (args: WitExtensionContracts.IWorkItemChangedArgs) => {
             if (control) {
-                control.clear();
+                control.clear(false);
             }
         },
         onFieldChanged: (args: WitExtensionContracts.IWorkItemFieldChangedArgs) => {
             if (control && args.changedFields[control.fieldName] !== undefined && args.changedFields[control.fieldName] !== null) {
                 control.invalidate();
             }
+
+            if (control && control.dependsOn !== undefined && control.dependsOn !== null) {
+                if (control && args.changedFields[control.dependsOn] !== undefined && args.changedFields[control.dependsOn] !== null) {
+                    control.GetSuggestedValues(false);
+                }
+            }
         }
     }
 };
 
 VSS.register(VSS.getContribution().id, provider);
-

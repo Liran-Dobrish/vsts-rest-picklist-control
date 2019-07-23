@@ -9,7 +9,7 @@
     "package:release": "node ./scripts/packageRelease",
     "package:beta": "node ./scripts/packageBeta",
     "publish:dev": "npm run package:dev && node ./scripts/publishDev",
-    "build:release": "npm run clean && mkdir dist && webpack --progress --colors --output-path ./dist -p",
+    "build:release": "npm run clean && mkdir dist && webpack --progress --colors --output-path ./dist --define process.env.NODE_EN=\"production\"",
     "publish:release": "npm run build:release && node ./scripts/publishRelease",
     "test": "karma start --single-run",
     "postinstall": "typings install"

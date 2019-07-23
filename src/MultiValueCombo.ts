@@ -3,7 +3,7 @@ import * as Utils_Array from "VSS/Utils/Array";
 import * as Utils_String from "VSS/Utils/String";
 import Q = require("q");
 import * as VSSUtilsCore from "VSS/Utils/Core";
-import {BaseMultiValueControl} from "./BaseMultiValueControl";
+import { BaseMultiValueControl } from "./BaseMultiValueControl";
 import { callApi } from "./RestCall";
 
 export class MultiValueCombo extends BaseMultiValueControl {
@@ -36,15 +36,7 @@ export class MultiValueCombo extends BaseMultiValueControl {
         this._valueToCheckboxMap = {};
         this._valueToLabelMap = {};
 
-        this._getSuggestedValues().then(
-            (values: string[]) => {
-                this._suggestedValues = values.filter((s:string):boolean => {
-                    return s.trim()!==''});
-                
-                this._populateCheckBoxes();
-                super.initialize();
-            }
-        );
+        this.GetSuggestedValues(true);
 
         this._toggleThrottleDelegate = VSSUtilsCore.throttledDelegate(this, 100, () => {
             this._toggleCheckBoxContainer();
@@ -71,9 +63,9 @@ export class MultiValueCombo extends BaseMultiValueControl {
         });
 
         $(window).keydown((eventObject) => {
-            if(eventObject.keyCode == 38 /* Up */) {
+            if (eventObject.keyCode == 38 /* Up */) {
                 let focusedCheckBox = $("input:focus", this._checkboxValuesContainer);
-                if(focusedCheckBox.length <= 0) {
+                if (focusedCheckBox.length <= 0) {
                     // None selected, choose last
                     $("input:last", this._checkboxValuesContainer).focus();
                 } else {
@@ -83,9 +75,9 @@ export class MultiValueCombo extends BaseMultiValueControl {
 
                 return false;
             }
-            else if(eventObject.keyCode == 40 /* Down */) {
+            else if (eventObject.keyCode == 40 /* Down */) {
                 let focusedCheckBox = $("input:focus", this._checkboxValuesContainer);
-                if(focusedCheckBox.length <= 0) {
+                if (focusedCheckBox.length <= 0) {
                     // None selected, choose first
                     $("input:first", this._checkboxValuesContainer).focus();
                 } else {
@@ -101,11 +93,29 @@ export class MultiValueCombo extends BaseMultiValueControl {
         });
     }
 
-    public clear(): void {
+    public async GetSuggestedValues(onInit: boolean): Promise<void> {
+        let values: string[] = await this._getSuggestedValues();
+        this._suggestedValues = values.filter((s: string): boolean => {
+            return s.trim() !== ''
+        });
+
+        this.clear(true);
+        this._populateCheckBoxes();
+        if (onInit) {
+            super.initialize();
+        }
+    }
+
+    public clear(cleardata: boolean): void {
         var checkboxes: JQuery = $("input", this._checkboxValuesContainer);
         var labels: JQuery = $(".checkboxLabel", this._checkboxValuesContainer);
         checkboxes.prop("checked", false);
         checkboxes.removeClass("selectedCheckbox");
+
+        if (cleardata) {
+            checkboxes.remove();
+        }
+
         this._selectedValuesContainer.empty();
     }
 
@@ -121,7 +131,7 @@ export class MultiValueCombo extends BaseMultiValueControl {
     }
 
     protected setValue(value: string): void {
-        this.clear();
+        this.clear(false);
         var selectedValues = value ? value.split(";") : [];
 
         this._showValues(selectedValues);
@@ -221,6 +231,7 @@ export class MultiValueCombo extends BaseMultiValueControl {
             this.showError("No values to select.");
         }
         else {
+            this.clearError();
             // Add the select all method
             let selectAllBox = this._createSelectAllControl();
 
@@ -234,7 +245,7 @@ export class MultiValueCombo extends BaseMultiValueControl {
         let selectAllBox = $("input.selectAllOption", this._checkboxValuesContainer);
         let allBoxes = $("input.valueOption", this._checkboxValuesContainer);
         let checkedBoxes = $("input.valueOption:checked", this._checkboxValuesContainer);
-        if(allBoxes.length > checkedBoxes.length) {
+        if (allBoxes.length > checkedBoxes.length) {
             selectAllBox.prop("checked", false);
         }
         else {
@@ -249,12 +260,12 @@ export class MultiValueCombo extends BaseMultiValueControl {
         let checkbox = this._createCheckBox(value, label, () => {
 
             let checkBoxes = $("input.valueOption", this._checkboxValuesContainer);
-            if(checkbox.prop("checked")) {
+            if (checkbox.prop("checked")) {
                 checkBoxes.prop("checked", true);
             } else {
                 checkBoxes.prop("checked", false);
             }
-            
+
         });
         var container = $("<div />").addClass("checkboxContainer selectAllControlContainer");
         checkbox.addClass("selectAllOption");
@@ -295,7 +306,7 @@ export class MultiValueCombo extends BaseMultiValueControl {
         return label;
     }
 
-    private _createCheckBox(value:string, label: JQuery, action?: Function) {
+    private _createCheckBox(value: string, label: JQuery, action?: Function) {
         let checkbox = $("<input  />");
         checkbox.attr("type", "checkbox");
         checkbox.attr("name", value);
@@ -305,7 +316,7 @@ export class MultiValueCombo extends BaseMultiValueControl {
         checkbox.attr("style", "visibility:hidden");
         checkbox.change((e) => {
 
-            if(action){
+            if (action) {
                 action.call(this);
             }
             this._refreshValue($(e.currentTarget).attr("value"));
@@ -315,12 +326,34 @@ export class MultiValueCombo extends BaseMultiValueControl {
         return checkbox;
     }
 
+    private async _updateUrlWithValues(url: string): Promise<string> {
+        let updateUrl: string = url;
+        let witService: WitService.IWorkItemFormService = await WitService.WorkItemFormService.getService();
+        let wiId: number = await witService.getId();
+        let tpPromise: object = await witService.getFieldValue("System.TeamProject");
+        let collPromise: string = await witService.getWorkItemResourceUrl(wiId);
+        let endidx = collPromise.indexOf("/_apis/");
+        let startidx = collPromise.indexOf("/tfs/");
+        let collection = collPromise.substring(startidx + 5, endidx);
 
-    private _getSuggestedValues(): IPromise<string[]> {
+        updateUrl = updateUrl.toLowerCase().replace("[#collection#]", collection);
+        updateUrl = updateUrl.toLowerCase().replace("[#project#]", tpPromise.toString());
+
+        if (this.dependsOn !== undefined && this.dependsOn !== "") {
+            let dependsOnValue: object = await witService.getFieldValue(this.dependsOn);
+            return updateUrl + "/" + this.fieldName + "/" + dependsOnValue + "/";
+        }
+        else {
+            return updateUrl + "/" + this.fieldName + "/";
+        }
+    }
+
+    private async _getSuggestedValues(): Promise<string[]> {
         var defer = Q.defer<any>();
         var inputs: IDictionaryStringTo<string> = VSS.getConfiguration().witInputs;
 
         var url: string = inputs["Url"];
+        url = await this._updateUrlWithValues(url);
         callApi(url, "GET", undefined, undefined, (data) => {
             defer.resolve(this._findArr(data));
         }, (error) => {

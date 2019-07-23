@@ -9,6 +9,11 @@ export class BaseMultiValueControl {
     public fieldName: string;
 
     /**
+     * Field name the control dependsfor values
+     */
+    public dependsOn: string;
+
+    /**
      * The container to hold the control
      */
     protected containerElement: JQuery;
@@ -51,6 +56,8 @@ export class BaseMultiValueControl {
             this.showError("FieldName input has not been specified");
         }
 
+        this.dependsOn = inputs["DependsOn"];
+
         this._windowResizeThrottleDelegate = VSSUtilsCore.throttledDelegate(this, 50, () => {
             this._windowWidth = window.innerWidth;
             this.resize();
@@ -86,7 +93,7 @@ export class BaseMultiValueControl {
         this.resize();
     }
 
-    public clear(): void {
+    public clear(cleardata: boolean): void {
 
     }
 
@@ -115,6 +122,10 @@ export class BaseMultiValueControl {
     }
 
     protected setValue(value: string): void {
+
+    }
+
+    public GetSuggestedValues(onInit: boolean): void {
 
     }
 

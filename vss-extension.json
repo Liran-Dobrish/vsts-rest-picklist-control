@@ -101,6 +101,15 @@
                             "dataType": "String",
                             "isRequired": false
                         }
+                    },
+                    {
+                        "id":"DependsOn",
+                        "name": "Depends On property",
+                        "description": "",
+                        "validation": {
+                            "dataType": "String",
+                            "isRequired": false
+                        }
                     }
 				]
             }
