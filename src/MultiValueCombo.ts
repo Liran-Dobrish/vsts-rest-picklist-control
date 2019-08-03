@@ -338,13 +338,14 @@ export class MultiValueCombo extends BaseMultiValueControl {
 
         updateUrl = updateUrl.toLowerCase().replace("[#collection#]", collection);
         updateUrl = updateUrl.toLowerCase().replace("[#project#]", tpPromise.toString());
+        updateUrl = updateUrl.toLowerCase().replace("[#fieldname#]", this.fieldName);
 
         if (this.dependsOn !== undefined && this.dependsOn !== "") {
             let dependsOnValue: object = await witService.getFieldValue(this.dependsOn);
-            return updateUrl + "/" + this.fieldName + "/" + dependsOnValue + "/";
+            return updateUrl + "/" + dependsOnValue + "/";
         }
         else {
-            return updateUrl + "/" + this.fieldName + "/";
+            return updateUrl;
         }
     }
 
