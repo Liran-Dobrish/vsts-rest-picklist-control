@@ -93,7 +93,11 @@ export class BaseMultiValueControl {
         this.resize();
     }
 
-    public clear(cleardata: boolean): void {
+    public clear(): void {
+
+    }
+
+    public clearValues(): void {
 
     }
 
@@ -127,6 +131,10 @@ export class BaseMultiValueControl {
 
     public GetSuggestedValues(onInit: boolean): void {
 
+    }
+
+    public RefreshValues():void{
+        
     }
 
     protected showError(error: string): void {

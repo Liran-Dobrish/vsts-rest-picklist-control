@@ -34,7 +34,7 @@ var provider = () => {
         },
         onUnloaded: (args: WitExtensionContracts.IWorkItemChangedArgs) => {
             if (control) {
-                control.clear(false);
+                control.clear();
             }
         },
         onFieldChanged: (args: WitExtensionContracts.IWorkItemFieldChangedArgs) => {
@@ -45,6 +45,7 @@ var provider = () => {
             if (control && control.dependsOn !== undefined && control.dependsOn !== null) {
                 if (control && args.changedFields[control.dependsOn] !== undefined && args.changedFields[control.dependsOn] !== null) {
                     control.GetSuggestedValues(false);
+                    control.RefreshValues();
                 }
             }
         }

@@ -99,24 +99,26 @@ export class MultiValueCombo extends BaseMultiValueControl {
             return s.trim() !== ''
         });
 
-        this.clear(true);
+        this.clearValues();
         this._populateCheckBoxes();
         if (onInit) {
             super.initialize();
         }
     }
 
-    public clear(cleardata: boolean): void {
+    public clear(): void {
         var checkboxes: JQuery = $("input", this._checkboxValuesContainer);
         var labels: JQuery = $(".checkboxLabel", this._checkboxValuesContainer);
         checkboxes.prop("checked", false);
         checkboxes.removeClass("selectedCheckbox");
 
-        if (cleardata) {
-            checkboxes.remove();
-        }
-
         this._selectedValuesContainer.empty();
+    }
+
+    public clearValues() {
+        if (this._checkboxValuesContainer !== undefined && this._checkboxValuesContainer !== null) {
+            this._checkboxValuesContainer.empty();
+        }
     }
 
     protected getValue(): string {
@@ -131,7 +133,7 @@ export class MultiValueCombo extends BaseMultiValueControl {
     }
 
     protected setValue(value: string): void {
-        this.clear(false);
+        this.clear();
         var selectedValues = value ? value.split(";") : [];
 
         this._showValues(selectedValues);
@@ -165,14 +167,12 @@ export class MultiValueCombo extends BaseMultiValueControl {
         this.resize();
     }
 
-
     private _hideCheckBoxContainer() {
         this._chevron.removeClass(this._chevronUpClass).addClass(this._chevronDownClass);
         this.containerElement.removeClass("expanded").addClass("collapsed");
         this._checkboxValuesContainer.hide();
         this.resize();
     }
-
 
     private _showValues(values: string[]) {
         if (values.length <= 0) {
@@ -198,12 +198,17 @@ export class MultiValueCombo extends BaseMultiValueControl {
         this.resize();
     }
 
+    public RefreshValues() {
+        this._refreshValues();
+    }
+
     private _refreshValues() {
         var rawValue = this.getValue();
         var values = rawValue ? rawValue.split(";") : [];
         this._selectedValuesContainer.empty();
         this._showValues(values);
     }
+
     private _refreshValue(currentSelectedValue) {
         this._selectedValuesContainer.empty();
         var val = [currentSelectedValue];
@@ -286,6 +291,12 @@ export class MultiValueCombo extends BaseMultiValueControl {
         let label = this._createValueLabel(value);
         let checkbox = this._createCheckBox(value, label);
         let container = $("<div />").addClass("checkboxContainer");
+        container.click((clickObj) => {
+            this._refreshValue(clickObj.target.textContent);
+            this.flush();
+            this._toggleThrottleDelegate.call(this);
+            return false;
+        });
         checkbox.addClass("valueOption");
         this._valueToCheckboxMap[value] = checkbox;
 
@@ -342,11 +353,10 @@ export class MultiValueCombo extends BaseMultiValueControl {
 
         if (this.dependsOn !== undefined && this.dependsOn !== "") {
             let dependsOnValue: object = await witService.getFieldValue(this.dependsOn);
-            return updateUrl + "/" + dependsOnValue + "/";
+            updateUrl = updateUrl.toLowerCase().replace("[#dependsonvalue#]", dependsOnValue.toString());
         }
-        else {
-            return updateUrl;
-        }
+
+        return updateUrl + "/";
     }
 
     private async _getSuggestedValues(): Promise<string[]> {
